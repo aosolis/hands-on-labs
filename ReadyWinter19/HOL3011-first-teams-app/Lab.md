@@ -1,4 +1,5 @@
 # 0-60: Get up and running with your very first Microsoft Teams app
+
 ## Overview and Introduction
 In this lab, you will be getting your first app up and running in Teams. You should do this lab if:
 - You have used Microsoft Teams
@@ -6,27 +7,37 @@ In this lab, you will be getting your first app up and running in Teams. You sho
 - You have built Add-ins for Office or SharePoint
 
 We will start with an app that provides basic bot and tab functionality already hosted on Azure. The lab will then include instructions for adding new functionality through the app’s manifest. For those who want to go further, you can add enhancements to the bot and deploy those changes to your own Azure subscription. 
+
 The sample app we're using here manages the hiring process of candidates for open positions in a team – a Talent Management Application. While it looks good, the app doesn't actually do anything – we want to focus on building a Teams app and loading it into Teams, not creating a full-blown talent management application.
+
 ## Prerequisites
-Your lab environment should already come preinstalled with the following tools
-- Ngrok
-- Visual Studio
+### Development tools
+Please come with the following tools installed on your laptop:
+- [Ngrok](https://ngrok.com/)
+    - We recommend signing up for an account. Otherwise your tunnel will time out periodically and you will need to restart ngrok. Each time you restart, the tunnel endpoint changes.
+- Visual Studio 2017
+    - Install the "ASP.NET and web development" workload
 - Microsoft Teams desktop client
 - Browser of your choice
-# PART 1: Get familiar with Teams apps
-In this first part of the Lab you’re going to create a Teams app using an existing base manifest provided as part of this lab. To get you up and running, we will provide a web app that is already running in Azure.
-The app package **teams-sample-app-package.zip** is located in this folder. Download it to your PC and unzip the contents to any local folder. It will contain three files:
-- manifest.json
-- color_icon.png
-- outline_icon.png
-## Step 1: Prepare your Office 365 environment
+
+### Prepare your Office 365 environment
+**IMPORTANT!** You must have an Office 365 tenant to complete this lab. If you don't have one, you can sign up for an Office 365 developer subscription by following the instructions [here](https://docs.microsoft.com/en-us/office/developer-program/office-365-developer-program-get-started).
+
 You will first need to enable side loading for Teams within your Office 365 environment. Open the Admin Center by visiting https://admin.microsoft.com/AdminPortal/Home#/Settings/ServicesAndAddIns from your browser.
 
 Next, select Microsoft Teams. Under the Apps section, scroll down to External Apps and make sure that “Allow sideloading of external apps” is set to On.
 
 ![A screenshot of the Apps settings in Microsoft Teams](Images/s1_1.png)
 
-## Step 2: Create your app using Teams App Studio
+# PART 1: Get familiar with Teams apps
+In this first part of the Lab you’re going to create a Teams app using an existing base manifest provided as part of this lab. To get you up and running, we will provide a web app that is already running in Azure.
+
+The app package **teams-sample-app-package.zip** is located in this folder. Download it to your PC and unzip the contents to any local folder. It will contain three files:
+- manifest.json
+- color_icon.png
+- outline_icon.png
+
+## Step 1: Create your app using Teams App Studio
 The Teams desktop client is pinned to the Task Bar. Click on it and log in with your VM’s credentials. You can play around with Teams and create your own teams and channels.
 To create the app package, Teams has a tool called App Studio – and it's actually a Teams app itself. Install it from the Teams app store:
 
@@ -89,10 +100,13 @@ Alternatively, you can also upload your custom app through the Teams UI. To do t
 Next, click on the Store icon in the Teams client and then click "Upload a custom app" at the lower left – the file will be located in your Downloads folder and it's called **teams-sample-app-package.zip** (if you are using the Azure version) or **ContosoTalent.zip** if you built it yourself.
  
 # PART 2: Deploying and testing locally
+(!TODO: fix the source location)
 In Part 2 of the lab, you’ll get a chance to run the app locally, make some minor changes, and then reload the app in Teams. First, you’ll need to grab the source code, which is located in the **microsoft-teams-sample-talent-acquisition** folder with this lab.
 
 Open the solution in Visual Studio by double-clicking on the .sln file. Leave it open for now – we’ll come back to it later.
+
 ## Step 4: Create a bot through Bot Framework (Optional)
+(!TODO: Change these instructions to use App Studio)
 Next, you need to register a bot through the Bot Framework portal. Navigate in your browser to https://dev.botframework.com/bots/new 
 Click on the "Sign in" button and log on with your demo tenant or MSA credentials. Agree to the Terms and Conditions if necessary, and you should see a page that looks like what's below. Fill it in according to the instructions.
 ![A screenshot of registering a new bot](Images/s4_1.png)
@@ -115,7 +129,6 @@ Type "hello" at the lower right and your bot should respond (if a "retry" link a
  ![A screenshot of the app running](Images/s5_3.png)
 We've verified that your bot is working, so let's try it in Teams.
  
-
 ## Step 6: Tunnel localhost to the Internet
 Although a Microsoft Teams app is free to access information and APIs inside your firewall, some portions of it, such as the tab URL and bot endpoint, must be accessible from the Internet. The app that you will create today will be running on localhost, so we need a way to make code running on your local machine be accessible from the Internet.
 We're using a tool called Ngrok (ngrok.com) for this purpose. 
@@ -137,6 +150,7 @@ Next, we're going to make a quick check that everything is working properly in V
 Visual Studio will build the solution and open http://localhost:3979. But we're interested in what's on the Internet, so paste the URL you saved earlier into a new browser tab. You should see the same page:
  ![A screenshot of the app running in the browser](Images/s7_2.png)
 You can stop the app now or leave it running and stop it later.
+
 ## Step 8: Update your app package and test
 In Part 1 of this lab, you used our Azure instance to test your app. Now, you can use your locally-running Ngrok instance. Return to App Studio within Teams and update these values:
 ### Tabs
@@ -150,10 +164,13 @@ Paste in the bot ID that you registered in Step 5. You can also use App Studio t
 ### Messaging extensions
 Similar to bots, update the bot ID to be the one you obtained in Step 5.
 ![A screenshot of the messaging extensions ](Images/s8_3.png)
-Now, from App Studio, you can side load the app 
+Now, from App Studio, you can side load the app.
+
+# PART 3: A new messaging extension command
+
 ## Step 9: Make some code changes
 In this step, you’ll add a new command to the messaging extension to allow searching for candidates in addition to open positions.
-Update your code
+
 In Visual Studio’s solution explorer, under the **Messaging** folder, open **MessagingExtension.cs**
 Under the CreateResponse() method, add the following block of code at line 93:
 ```csharp
@@ -173,7 +190,8 @@ else if (query.CommandId == "searchCandidates")
 }
 ```
 This block of code is what responds to the new command to search for candidates. Rebuild your solution and rerun by hitting F5. In the next step you’ll wire up the command to your app’s manifest.
-### Add a new command
+
+### Step 10: Add a new command to the manifest
 Now you’ll add a new command under the Messaging extensions section of your app in App Studio. Provide the following field values:
 - Command Id = searchCandidates
 - Title = Candidates
@@ -193,4 +211,3 @@ Under Test and distribute, click Install to reload your app.
 In Teams, go to any chat or channel conversation. Click on the “…” below the compose box to open the Contoso Talent app – you should now see your new command. Type in any string to initiate the search with your new code changes.
 ![A screenshot of the running app imn Microsoft Teams](Images/s9_2.png)
 
-Congrats - you have now created and deployed your first Microsoft Teams App!
