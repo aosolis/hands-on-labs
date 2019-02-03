@@ -211,3 +211,80 @@ Under Test and distribute, click Install to reload your app.
 In Teams, go to any chat or channel conversation. Click on the “…” below the compose box to open the Contoso Talent app – you should now see your new command. Type in any string to initiate the search with your new code changes.
 ![A screenshot of the running app imn Microsoft Teams](Images/s9_2.png)
 
+# PART 4: Actionable messages and task modules
+In this part we'll add the ability to create new job postings using the bot.
+
+### Step 11: Handle the "new" command
+Messages sent to the bot are handled by the `MessageReceivedAsync` method in `RootDialog.cs`. To keep the example relatively simple, the method simply looks for keywords in the text and acts accordingly. A more sophisticated app might use [LUIS](https://luis.ai) to detect intents and entities.
+
+At line 143 add a handler for the "new" keyword:
+```csharp
+  else if (cmd.Contains("new"))
+  {
+      await SendCreateNewJobPostingMessage(context);
+  }
+```
+and the corresponding `SendCreateNewJobPostingMessage` method:
+```csharp
+  private async Task SendCreateNewJobPostingMessage(IDialogContext context)
+  {
+      IMessageActivity reply = context.MakeMessage();
+      reply.Attachments = new List<Attachment>();
+
+      AdaptiveCard card = CardHelper.CreateCardForNewJobPosting();
+      Attachment attachment = new Attachment()
+      {
+          ContentType = AdaptiveCard.ContentType,
+          Content = card
+      };
+
+      reply.Attachments.Add(attachment);
+
+      await context.PostAsync(reply);
+  }
+```
+The handler constructs a new adaptive card from the contents of `newjobpostingtemplate.json`. The card contains several input fields that define the job posting, and two buttons: "Create posting" and "Cancel". Both buttons are `Action.Submit` actions that post data back to the bot.
+
+Run your project again, and test that your bot recognizes the command that we added by sending it the text "new". It should reply with an adaptive card. (You can try clicking on the buttons, but the bot doesn't know what to do with them yet!)
+
+### Step 12: Handle the "Create posting" button
+An [Action.Submit](https://adaptivecards.io/explorer/Action.Submit.html) action on an adaptive card takes all the input fields and merges them with the JSON specified in the action's `data` parameter. The result is then sent to the bot in the `value` property of a `message` activity.
+
+In our example, the "Create posting" button is defined as:
+```json
+  {
+    "type": "Action.Submit",
+    "title": "Create posting",
+    "data": {
+      "command": "createPosting"
+    }
+  }
+```
+so the bot wil receive a message like:
+```json
+{
+  ...
+  "type": "message",
+  "value": {
+    "command":"createPosting",
+    "jobTitle": "Senior PM",
+    "jobLevel": "7",
+    "jobLocation": "1"
+  }
+}
+```
+
+In the `HandleSubmitAction` of `RootDialog.cs`, at line XXX, add the following block of code:
+```csharp
+  // Confirmation of job posting message.
+  else if (command != null && command.ToString() == "createPosting")
+  {
+      var pos = new OpenPositionsDataController().CreatePosition(
+        parameters["jobTitle"].ToString(),
+        int.Parse(parameters["jobLevel"].ToString()),
+        Constants.Locations[int.Parse(parameters["jobLocation"].ToString())], activity.From.Name);
+
+      await SendNewPostingConfirmationMessage(context, pos);
+  }
+```
+
