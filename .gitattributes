@@ -62,4 +62,7 @@
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
 
-*.zip   binary
+*.zip    binary
+*.docx   binary
+*.xlsx   binary
+*.pdf    binary

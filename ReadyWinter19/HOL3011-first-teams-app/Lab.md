@@ -211,8 +211,8 @@ Under Test and distribute, click Install to reload your app.
 In Teams, go to any chat or channel conversation. Click on the “…” below the compose box to open the Contoso Talent app – you should now see your new command. Type in any string to initiate the search with your new code changes.
 ![A screenshot of the running app imn Microsoft Teams](Images/s9_2.png)
 
-# PART 4: Actionable messages and task modules
-In this part we'll add the ability to create new job postings using the bot.
+# PART 4: Create a new job posting
+In this part, we'll add a way to create new job postings using the bot, using an [adaptive card](https://adaptivecards.io) to collect user input.
 
 ### Step 11: Handle the "new" command
 Messages sent to the bot are handled by the `MessageReceivedAsync` method in `RootDialog.cs`. To keep the example relatively simple, the method simply looks for keywords in the text and acts accordingly. A more sophisticated app might use [LUIS](https://luis.ai) to detect intents and entities.
@@ -245,6 +245,7 @@ and the corresponding `SendCreateNewJobPostingMessage` method:
 ```
 The handler constructs a new adaptive card from the contents of `newjobpostingtemplate.json`. The card contains several input fields that define the job posting, and two buttons: "Create posting" and "Cancel". Both buttons are `Action.Submit` actions that post data back to the bot.
 
+#### Test it!
 Run your project again, and test that your bot recognizes the command that we added by sending it the text "new". It should reply with an adaptive card. (You can try clicking on the buttons, but the bot doesn't know what to do with them yet!)
 
 ### Step 12: Handle the "Create posting" button
@@ -287,4 +288,75 @@ In the `HandleSubmitAction` of `RootDialog.cs`, at line XXX, add the following b
       await SendNewPostingConfirmationMessage(context, pos);
   }
 ```
+Add the `SendNewPostingConfirmationMessage` method to `RootDialog.cs`:
+```csharp
+  private async Task SendNewPostingConfirmationMessage(IDialogContext context, OpenPosition pos)
+  {
+      IMessageActivity reply = context.MakeMessage();
+      reply.Attachments = new List<Attachment>();
+      reply.Text = $"Your position has been created.";
 
+      ThumbnailCard positionCard = CardHelper.CreateCardForPosition(pos, false);
+      reply.Attachments.Add(positionCard.ToAttachment());
+
+      await context.PostAsync(reply);
+  }
+```
+
+#### Test it!
+1. Build and run your project.
+2. Send "new job posting" to your bot. It should reply with an adaptive card.
+3. Enter values for the title, level, and location, then press the "Create posting" button.
+4. The bot should reply with the text `"Your new position has been created."` and a card for the new position.
+
+### Step 12: Prompt for a job description file
+!TODO: Motivate this step
+
+Modify the `SendNewPostingConfirmationMessage` so that the response to the "Create posting" button prompts for a job description:
+```csharp
+  reply.Text = $"Your position has been created. Please also upload the job description now.";
+```
+
+When the user send the bot a message with a file attached, the bot receives a `application/vnd.microsoft.teams.file.download.info` attachment that has information about the file. Our sample app will just check the file type and respond with success to PDF and DOCX submissions. In practice you would get the file contents by making a GET request to the location in `downloadUrl`.
+```json
+{
+  "contentType": "application/vnd.microsoft.teams.file.download.info",
+  "contentUrl": "https://contoso.sharepoint.com/personal/johnadams_contoso_com/Documents/Applications/file_example.txt",
+  "name": "file_example.txt",
+  "content": {
+    "downloadUrl" : "https://download.link",
+    "uniqueId": "1150D938-8870-4044-9F2C-5BBDEBA70C9D",
+    "fileType": "txt"
+  }
+}
+```
+
+Add code to `HandleSubmitAction` to respond to file attachments:"
+```csharp
+  else if (activity.Attachments.Any())
+  {
+      // Handle file upload scenario.
+      if (activity.Attachments[0].ContentType == "application/vnd.microsoft.teams.file.download.info")
+      {
+          string fileName = activity.Attachments[0].Name;
+          string fileType = (activity.Attachments[0].Content as JObject)["fileType"].ToString().ToLower();
+
+          if (fileType.Contains("docx") || fileType.Contains("pdf"))
+          {
+              await context.PostAsync($"Job posting successfully uploaded: {fileName}");
+          } else
+          {
+              await context.PostAsync("Invalid file type received. Please upload a PDF or Word document");
+          }
+      }
+  }
+```
+
+#### Test it!
+1. Build and run your project.
+2. Send "new job posting" to your bot and create a new job posting.
+4. The bot should reply with the text `"Your new position has been created. Please also upload the job description now."` and a card for the new position.
+5. Send the bot a PDF or DOCX file. There are some sample description files in the `Job Descriptions` folder.
+6. The bot should respond with `"Job posting successfully uploaded: ` and the name of the file that you uploaded.
+
+If that works, repeat steps 2-5, but this time send it a different kind of file--perhaps try an Excel spreadsheet? The bot should detect the incorrect file type, and say `"Invalid file type received. Please upload a PDF or Word document"`.
