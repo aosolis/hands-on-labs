@@ -222,7 +222,6 @@ namespace TeamsTalentMgmtApp.Dialogs
                 + "* Show details about a candidate, for example: candidate details John Smith 0F812D01 \n"
                 + "* Show top recent candidates for a Req ID, for example: top candidates 0F812D01 \n"
                 + "* Schedule interview for name and Req ID, for example: schedule interview John Smith 0F812D01 \n"
-                + "* Create a new job posting \n"
                 + "* List all your open positions";
 
             await context.PostAsync(helpMessage);
