@@ -23,14 +23,16 @@ Please come with the following tools installed on your laptop:
 ### Prepare your Office 365 environment
 **IMPORTANT!** You must have an Office 365 tenant to complete this lab. If you don't have one, you can sign up for an Office 365 developer subscription by following the instructions [here](https://docs.microsoft.com/en-us/office/developer-program/office-365-developer-program-get-started).
 
+>**IMPORTANT!** Because of limitations in Teams App Studio, a Microsoft Teams free tenant will **not** work for this lab. 
+
 You will first need to enable side loading for Teams within your Office 365 environment. Open the Admin Center by visiting https://admin.microsoft.com/AdminPortal/Home#/Settings/ServicesAndAddIns from your browser.
 
 Next, select Microsoft Teams. Under the Apps section, scroll down to External Apps and make sure that “Allow sideloading of external apps” is set to On.
 
 ![A screenshot of the Apps settings in Microsoft Teams](Images/s1_1.png)
 
-# PART 1: Get familiar with Teams apps
-In this first part of the Lab you’re going to create a Teams app using an existing base manifest provided as part of this lab. To get you up and running, we will provide a web app that is already running in Azure.
+# PART 1: Your first Teams app
+In this first part of the Lab you’re going to create a Teams app using an existing base manifest.
 
 The app package **teams-sample-app-package.zip** is located in this folder. Download it to your PC and unzip the contents to any local folder. It will contain three files:
 - manifest.json
@@ -38,30 +40,31 @@ The app package **teams-sample-app-package.zip** is located in this folder. Down
 - outline_icon.png
 
 ## Step 1: Create your app using Teams App Studio
-The Teams desktop client is pinned to the Task Bar. Click on it and log in with your VM’s credentials. You can play around with Teams and create your own teams and channels.
-To create the app package, Teams has a tool called App Studio – and it's actually a Teams app itself. Install it from the Teams app store:
+Open the Teams desktop client and log in with your test tenant's credentials. You can play around with Teams and create your own teams and channels.
+
+To create the app package, Teams has a tool called App Studio&mdash;and it's actually a Teams app itself. Install it from the Teams app store:
 
 ![A screenshot of the Microsoft Teams app store](Images/s2_1.png)
 
 Click on the "Store" icon at the lower left, search for "app studio", click on the "Teams App Studio" entry, "Install" button on the consent dialog, and then the bottom "Open" button on the second next dialog:
+
 ![A screenshot of Microsoft Teams App Studio](Images/s2_2.png) 
 
-Click on the "Manifest editor" tab and the "Import and existing app" button:
+Click on the "Manifest editor" tab and the "Import an existing app" button:
+
 ![A screenshot of the Manifest editor tab in App Studio](Images/s2_3.png)
 
 Load the **teams-sample-app-package.zip** file that you previously unzipped and then click on the "Contoso Talent" entry.
 
 ![A screenshot of the Manifest editor with the Contoso Talent Entry](Images/s2_3_5.png)
+
+## Step 2: Modify the manifest
  
 Most of the information has already been filled out for you. The following screenshots show what information to change:
 
 ### App Details
+Click on the "Generate" button to generate a unique app id.
 ![A screenshot of App details in Microsoft Teams](Images/s2_4.png)
-
-### Tabs
-A tab is an embedding of an existing web application experience inside of Teams, which users can collaborate around.
-You will update the tab information to point to the Azure-hosted tab. In the later section, you can update these entries to point to your local setup.
-![A screenshot of editing the Tab information](Images/s2_5.png)
 
 ### Bots
 This app supports a bot that users can interact with through natural language. It supports a number of commands the return rich cards.
@@ -100,34 +103,36 @@ Alternatively, you can also upload your custom app through the Teams UI. To do t
 Next, click on the Store icon in the Teams client and then click "Upload a custom app" at the lower left – the file will be located in your Downloads folder and it's called **teams-sample-app-package.zip** (if you are using the Azure version) or **ContosoTalent.zip** if you built it yourself.
  
 # PART 2: Deploying and testing locally
-(!TODO: fix the source location)
-In Part 2 of the lab, you’ll get a chance to run the app locally, make some minor changes, and then reload the app in Teams. First, you’ll need to grab the source code, which is located in the **microsoft-teams-sample-talent-acquisition** folder with this lab.
+
+First, you’ll need to grab the source code, which is located in the **microsoft-teams-sample-talent-acquisition** folder with this lab.
 
 Open the solution in Visual Studio by double-clicking on the .sln file. Leave it open for now – we’ll come back to it later.
 
-## Step 4: Create a bot through Bot Framework (Optional)
-(!TODO: Change these instructions to use App Studio)
-Next, you need to register a bot through the Bot Framework portal. Navigate in your browser to https://dev.botframework.com/bots/new 
-Click on the "Sign in" button and log on with your demo tenant or MSA credentials. Agree to the Terms and Conditions if necessary, and you should see a page that looks like what's below. Fill it in according to the instructions.
-![A screenshot of registering a new bot](Images/s4_1.png)
- 
+## Step 4: Add a bot to the sample application
+Go to the "Bots" section in the manifest editor and click on "Set up" to start.
 
-Once you've logged in to the Application Registration portal (https://apps.dev.microsoft.com), the App name you just created in Bot Framework will appear and an App ID will be generated. Copy this to the clipboard and paste it into Notepad. Then generate a password and copy/paste that to Notepad too. If you forgot to copy the password, simply generate a new one. Remember to click on the "Finish and go back to Bot Framework" button because you're not done yet!
-![A screenshot of generating the id and password for the app](Images/s4_2.png)
-This will take you back to the previous page. Scroll down to the bottom and click the checkbox and click the Register button. That will take you to a page that looks like this:
- ![A screenshot of the app registration page and clicking on the Microsoft Teams icon](Images/s4_3.png)
-Click on the Microsoft Teams icon to add it as a channel (which in this context, has nothing to do with Microsoft Teams channels). Agree to the Terms of Service and you'll see a "Configure MSTeams" – click on Done at the lower left (there's nothing to configure):
- ![A screenshot of configuring Microsoft Teams as a channel for the app](Images/s4_4.png)
-After you press the Done button, you'll see Microsoft Teams added to the list of channels. Leave the "Connect to channels" page for your bot open – we're going to come back to it shortly.
+In the dialog that appears, select "New bot" and name it "Contoso Talent". Under "Scope" select "Personal" and "Team". Leave the rest of the checkboxes unchecked.
+
+![A screenshot of creating a new bot](Images/s4_1.png)
+
+Then click on "Create bot" and wait as App Studio registers a new bot with the Microsoft Bot Framework.
+
+The dialog will close and you'll be back on the "Bots" page. Notice that a new bot has been created. Select the app id, press Ctrl-C to copy it, and paste the id into Notepad. You'll need this ID later!
+
+![A screenshot of the bot id](Images/s4_1_5.png)
+
+Then click on "Generate new password". Select and copy the password that is generated, then paste it into Notepad. Just like the app id, you'll need the password later.
+
+![A screenshot of the bot password](Images/s4_2.png)
+
+The "messaging endpoint" is the HTTP endpoint where your bot will receive messages sent to it. Leave this blank for now&mdash;we'll come back to it later.
+
 ## Step 5: Set your App ID and Password and test your bot
 Return to Visual Studio and open the Web.config file at the root of the solution. In the TeamsAppId/MicrosoftAppId/MicrosoftAppPassword sections, copy/paste the App ID and Password from Notepad. TeamsAppId doesn't have to be the same as MicrosoftAppId, but it's usually easier if it is, so use the same App ID for both. When you are done, it should look like this:
+
 ![A screenshot of Visual Studio showing Web.config from the app project](Images/s5_1.png)
-Save the Web.config file and run your solution again.
-Now, return to the "Connect to channels" page for your bot, and press the "Test" button at the upper right:
- ![A screenshot of connecting to channels screen and the Test button at the upper right](Images/s5_2.png)
-Type "hello" at the lower right and your bot should respond (if a "retry" link appears next to what you typed, click it):
- ![A screenshot of the app running](Images/s5_3.png)
-We've verified that your bot is working, so let's try it in Teams.
+
+Save the Web.config file.
  
 ## Step 6: Tunnel localhost to the Internet
 Although a Microsoft Teams app is free to access information and APIs inside your firewall, some portions of it, such as the tab URL and bot endpoint, must be accessible from the Internet. The app that you will create today will be running on localhost, so we need a way to make code running on your local machine be accessible from the Internet.
@@ -137,34 +142,39 @@ In the open command prompt (or you can start a new one), type the following comm
 ``` ngrok http 3979 -host-header=localhost:3979 ``` 
 
 After a bit, you should see something like this, although the http/https URLs will be different:
+
 ![A screenshot of ngrok running](Images/s6_1.png)
-Copy the https: URL (not the http: URL) to the clipboard. In the example above, it's https://b26d0449.ngrok.io, but of course yours will be different. **Save the URL; you'll need it shortly.** 
+
+Copy the https: URL (not the http: URL) to the clipboard. In the example above, it's https://b26d0449.ngrok.io, but of course yours will be different. **Save the URL: you'll need it shortly.** 
+
 You can minimize the ngrok window; it will keep running in the background.
  
-
 ## Step 7: Start your app in Visual Studio
 Next, we're going to make a quick check that everything is working properly in Visual Studio. Switch to Visual Studio and click on the Run icon:
 
 ![A screenshot of starting the app using the run icon in Visual Studio](Images/s7_1.png)
 
 Visual Studio will build the solution and open http://localhost:3979. But we're interested in what's on the Internet, so paste the URL you saved earlier into a new browser tab. You should see the same page:
+
  ![A screenshot of the app running in the browser](Images/s7_2.png)
-You can stop the app now or leave it running and stop it later.
 
 ## Step 8: Update your app package and test
-In Part 1 of this lab, you used our Azure instance to test your app. Now, you can use your locally-running Ngrok instance. Return to App Studio within Teams and update these values:
-### Tabs
-Update the team tab configuration URL and personal tab URL to point to your ngrok instance, e.g. https://b26d0449.ngrok.io/channelconfig.html
- ![A screenshot of the Tabs settings](Images/s8_1.png)
+Go back to your app in App Studio. In the "Bots" section, in the "Messaging endpoint" field, enter your ngrok URL, followed by `/api/messages`. For example, if your ngrok URL is `https://b26d0449.ngrok.io`, you would enter `https://b26d0449.ngrok.io/api/messages` as the messaging endpoint.
 
-### Bots
-Paste in the bot ID that you registered in Step 5. You can also use App Studio to manage your bot’s endpoint by following the instructions in “Setup”.
-![A screenshot of the bots settings](Images/s8_2.png)
+Press Tab to move focus out of the text box, and wait for the green checkmark to indicate that the messaging endpoint was successfully saved.
+
+![A screenshot of the bots settings](Images/s8_1.png)
+
+## Step 9: Run the Sample App
+You can load and test your sample app directly from App Studio. To do this, click “Test and distribute” under the Finish section in the Manifest editor. Click “Install” and select the team in which you want to test the app.
  
-### Messaging extensions
-Similar to bots, update the bot ID to be the one you obtained in Step 5.
-![A screenshot of the messaging extensions ](Images/s8_3.png)
-Now, from App Studio, you can side load the app.
+![A screenshot of installing the app from App studio](Images/s3_1.png)
+![A screenshot of the App install dialog](Images/s3_2.png)
+ 
+Next, you'll see the dialog below (of course, the team name will be different). Here, it shows the General Channel:
+![A screenshot of app installation](Images/s3_3.png)
+
+Install the
 
 # PART 3: A new messaging extension command
 
