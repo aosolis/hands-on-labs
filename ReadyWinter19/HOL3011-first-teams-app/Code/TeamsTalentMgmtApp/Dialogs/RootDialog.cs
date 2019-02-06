@@ -163,6 +163,24 @@ namespace TeamsTalentMgmtApp.Dialogs
                     await SendNewPostingConfirmationMessage(context, pos);
                 }
             }
+            else if (activity.Attachments.Any())
+            {
+                // Handle file upload scenario.
+                if (activity.Attachments[0].ContentType == "application/vnd.microsoft.teams.file.download.info")
+                {
+                    string fileName = activity.Attachments[0].Name;
+                    string fileType = (activity.Attachments[0].Content as JObject)["fileType"].ToString().ToLower();
+
+                    if (fileType.Contains("docx") || fileType.Contains("pdf"))
+                    {
+                        await context.PostAsync($"Job posting successfully uploaded: {fileName}");
+                    }
+                    else
+                    {
+                        await context.PostAsync("Invalid file type received. Please upload a PDF or Word document");
+                    }
+                }
+            }
         }
 
         private async Task SendCandidateDetailsMessage(IDialogContext context, Candidate c)
