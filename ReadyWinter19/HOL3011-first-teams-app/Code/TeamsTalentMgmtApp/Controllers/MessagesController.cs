@@ -28,7 +28,16 @@ namespace TeamsTalentMgmtApp
             }
             else if (activity.Type == ActivityTypes.Invoke) 
             {
-                // No invokes to handle yet
+                // Compose extensions come in as Invokes. Leverage the Teams SDK helper functions
+                if (activity.IsComposeExtensionQuery())
+                {
+                    // Determine the response object to reply with
+                    MessagingExtension msgExt = new MessagingExtension(activity);
+                    var invokeResponse = msgExt.CreateResponse();
+
+                    // Return the response
+                    return Request.CreateResponse(HttpStatusCode.OK, invokeResponse);
+                }
             }
             else
             {
