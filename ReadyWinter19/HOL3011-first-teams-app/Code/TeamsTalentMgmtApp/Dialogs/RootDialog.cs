@@ -269,7 +269,7 @@ namespace TeamsTalentMgmtApp.Dialogs
         {
             IMessageActivity reply = context.MakeMessage();
             reply.Attachments = new List<Attachment>();
-            reply.Text = $"Your position has been created. Please also upload the job description now.";
+            reply.Text = $"Your position has been created.";
 
             ThumbnailCard positionCard = CardHelper.CreateCardForPosition(pos, false);
             reply.Attachments.Add(positionCard.ToAttachment());
