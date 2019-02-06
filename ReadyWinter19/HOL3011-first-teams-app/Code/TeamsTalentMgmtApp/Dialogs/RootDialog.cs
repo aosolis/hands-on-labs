@@ -68,59 +68,9 @@ namespace TeamsTalentMgmtApp.Dialogs
                     {
                         await SendTopCandidatesMessage(context, keywords[0]);
                     }
-                    else if (cmd.Contains("schedule"))
-                    {
-                        // Supports either structured query or via user input.
-                        JObject ctx = activity.Value as JObject;
-
-                        // Check if this is a button press or a text command.
-                        if (ctx != null)
-                        {
-                            Candidate c = ctx.ToObject<Candidate>();
-                            await SendScheduleInterviewMessage(context, c, c.ReqId);
-                        }
-                        else if (keywords.Length == 3)
-                        {
-                            string name = string.Join(" ", keywords.Take(2).ToArray());
-                            string reqId = keywords[2];
-
-                            // Takes 3 parameters: first name, last name, and then req ID
-                            await SendScheduleInterviewMessage(context, name, reqId);
-                        }
-                        else
-                        {
-                            await SendHelpMessage(context, "I'm sorry, I did not understand you :(");
-                        }
-                    }
                     else if (cmd.Contains("open"))
                     {
                         await SendOpenPositionsMessage(context);
-                    }
-                    else if (cmd.Contains("resume"))
-                    {
-                        // Return "resume file" for the given candidate name.
-                        if (keywords.Length > 0)
-                        {
-                            string name = string.Join(" ", keywords).ToLower();
-
-                            IMessageActivity reply = context.MakeMessage();
-                            reply.Attachments = new List<Attachment>();
-
-                            JObject card = new JObject();
-                            card["description"] = $"Here is the resume for {name}";
-                            card["sizeInBytes"] = 1500;
-
-                            Attachment attachment = new Attachment()
-                            {
-                                ContentType = "application/vnd.microsoft.teams.card.file.consent",
-                                Name = $"{name} resume.pdf",
-                                Content = card
-                            };
-
-                            reply.Attachments.Add(attachment);
-
-                            await context.PostAsync(reply);
-                        }
                     }
                     else if (cmd.Contains("candidate"))
                     {
@@ -140,15 +90,6 @@ namespace TeamsTalentMgmtApp.Dialogs
                             await SendCandidateDetailsMessage(context, c);
                         }
                     }
-                    else if (cmd.Contains("new"))
-                    {
-                        await SendCreateNewJobPostingMessage(context);
-                    }
-                    else if (cmd.Contains("assign"))
-                    {
-                        string guid = split[1];
-                        await UpdateMessage(context, guid);
-                    }
                     else
                     {
                         await SendHelpMessage(context, "I'm sorry, I did not understand you :(");
@@ -156,29 +97,10 @@ namespace TeamsTalentMgmtApp.Dialogs
                 }
                 else
                 {
-                    // No parameters
-                    int magicCode;
-
-                    if (int.TryParse(text, out magicCode))
-                    {
-                        // If the user is pasting a magic number, check if that's to get an auth token.
-                        // TODO: This shouldn't be necessary once we make some small fixes to the bot auth service.
-                        var oauthClient = activity.GetOAuthClient();
-                        var token = await oauthClient.OAuthApi.GetUserTokenAsync(activity.From.Id, ConnectionName, magicCode: activity.Text).ConfigureAwait(false);
-                        if (token != null)
-                        {
-                            Microsoft.Graph.User current = await new GraphUtil(token.Token).GetMe();
-                            await context.PostAsync($"Success! You are now signed in as {current.DisplayName} with {current.Mail}");
-                        }
-                    }
-                    else if (text.Contains("help"))
+                    if (text.Contains("help"))
                     {
                         // Respond with standard help message.
                         await SendHelpMessage(context, "Sure, I can provide help info about me.");
-                    }
-                    else if (text.Contains("login"))
-                    {
-                        await SendOAuthCardAsync(context, activity);
                     }
                     else if (text.Contains("welcome") || text.Contains("hello") || text.Contains("hi"))
                     {
@@ -196,19 +118,6 @@ namespace TeamsTalentMgmtApp.Dialogs
         }
 
         #region MessagingHelpers
-
-        /// <summary>
-        /// Send login prompt.
-        /// </summary>
-        /// <param name="context"></param>
-        /// <param name="activity"></param>
-        /// <returns></returns>
-        private async Task SendOAuthCardAsync(IDialogContext context, Activity activity)
-        {
-            var client = activity.GetOAuthClient();
-            var oauthReply = await activity.CreateOAuthReplyAsync(ConnectionName, "Please sign in to access talent services", "Sign in").ConfigureAwait(false);
-            await context.PostAsync(oauthReply);
-        }
 
         /// <summary>
         /// Helper method to send a simple help message.
@@ -235,108 +144,7 @@ namespace TeamsTalentMgmtApp.Dialogs
         /// <returns></returns>
         private async Task HandleSubmitAction(IDialogContext context, Activity activity)
         {
-            JObject parameters = activity.Value as JObject;
-
-            if (parameters != null)
-            {
-                var command = parameters["command"];
-
-                // Handle login completion event.
-                if (activity.IsTeamsVerificationInvoke())
-                {
-                    string code = parameters["state"].ToString();
-
-                    var oauthClient = activity.GetOAuthClient();
-                    var token = await oauthClient.OAuthApi.GetUserTokenAsync(activity.From.Id, ConnectionName, magicCode: code).ConfigureAwait(false);
-                    if (token != null)
-                    {
-                        Microsoft.Graph.User current = await new GraphUtil(token.Token).GetMe();
-                        await context.PostAsync($"Success! You are now signed in as {current.DisplayName} with {current.Mail}");
-                    }
-                }
-                // Confirmation of job posting message.
-                else if (command != null && command.ToString() == "createPosting")
-                {
-                    OpenPosition pos = new OpenPositionsDataController().CreatePosition(parameters["jobTitle"].ToString(), int.Parse(parameters["jobLevel"].ToString()),
-                        Constants.Locations[int.Parse(parameters["jobLocation"].ToString())], activity.From.Name);
-
-                    await SendNewPostingConfirmationMessage(context, pos);
-                }
-            }
-            else if (activity.Attachments.Any())
-            {
-                // Handle file upload scenario.
-                if (activity.Attachments[0].ContentType == "application/vnd.microsoft.teams.file.download.info")
-                {
-                    string fileName = activity.Attachments[0].Name;
-                    string fileType = (activity.Attachments[0].Content as JObject)["fileType"].ToString().ToLower();
-
-                    if (fileType.Contains("docx") || fileType.Contains("pdf"))
-                    {
-                        await context.PostAsync($"Job posting successfully uploaded: {fileName}");
-                    } else
-                    {
-                        await context.PostAsync("Invalid file type received. Please upload a PDF or Word document");
-                    }
-                }
-            }
-        }
-
-        private async Task SendNewPostingConfirmationMessage(IDialogContext context, OpenPosition pos)
-        {
-            IMessageActivity reply = context.MakeMessage();
-            reply.Attachments = new List<Attachment>();
-            reply.Text = $"Your position has been created. Please also upload the job description now.";
-
-            ThumbnailCard positionCard = CardHelper.CreateCardForPosition(pos, false);
-            reply.Attachments.Add(positionCard.ToAttachment());
-
-            await context.PostAsync(reply);
-        }
-
-        private async Task SendScheduleInterviewMessage(IDialogContext context, Candidate c, string reqId)
-        {
-            InterviewRequest request = new InterviewRequest
-            {
-                Candidate = c,
-                Date = new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day),
-                PositionTitle = new OpenPositionsDataController().GetPositionForReqId(reqId).Title,
-                Remote = false,
-                ReqId = reqId
-            };
-
-            await SendScheduleInterviewMessage(context, request);
-        }
-
-        private async Task SendCreateNewJobPostingMessage(IDialogContext context)
-        {
-            IMessageActivity reply = context.MakeMessage();
-            reply.Attachments = new List<Attachment>();
-
-            AdaptiveCard card = CardHelper.CreateCardForNewJobPosting();
-            Attachment attachment = new Attachment()
-            {
-                ContentType = AdaptiveCard.ContentType,
-                Content = card
-            };
-
-            reply.Attachments.Add(attachment);
-
-            await context.PostAsync(reply);
-        }
-
-        private async Task SendScheduleInterviewMessage(IDialogContext context, string name, string reqId)
-        {
-            InterviewRequest request = new InterviewRequest
-            {
-                Candidate = new CandidatesDataController().GetCandidateByName(name),
-                Date = new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day),
-                PositionTitle = new OpenPositionsDataController().GetPositionForReqId(reqId).Title,
-                Remote = false,
-                ReqId = reqId
-            };
-
-            await SendScheduleInterviewMessage(context, request);
+            // No submit actions to handle yet
         }
 
         private async Task SendCandidateDetailsMessage(IDialogContext context, Candidate c)
@@ -355,24 +163,6 @@ namespace TeamsTalentMgmtApp.Dialogs
             System.Diagnostics.Debug.WriteLine(card.ToJson());
 
             await context.PostAsync(reply);
-        }
-
-        // Send a message with a list of found tasks.
-        private async Task SendScheduleInterviewMessage(IDialogContext context, InterviewRequest request)
-        {
-            IMessageActivity reply = context.MakeMessage();
-            reply.Attachments = new List<Attachment>();
-            reply.Text = $"Here's your request to schedule an interview:";
-
-            O365ConnectorCard card = CardHelper.CreateCardForInterviewRequest(request);
-            reply.Attachments.Add(card.ToAttachment());
-
-            ConnectorClient client = new ConnectorClient(new Uri(context.Activity.ServiceUrl));
-            ResourceResponse resp = await client.Conversations.ReplyToActivityAsync((Activity)reply);
-
-            // Cache the response activity ID and previous interview card so that we can refresh it later.
-            //string activityId = resp.Id.ToString();
-            //context.ConversationData.SetValue(request.ReqId, new Tuple<string, O365ConnectorCard>(activityId, card));
         }
 
         /// <summary>
@@ -425,42 +215,6 @@ namespace TeamsTalentMgmtApp.Dialogs
             };
             reply.Attachments.Add(buttonsCard.ToAttachment());
             await context.PostAsync(reply);
-        }
-
-        /// <summary>
-        /// Helper method to update an existing message for the given task item GUID.
-        /// </summary>
-        /// <param name="context"></param>
-        /// <param name="taskItemGuid"></param>
-        /// <returns></returns>
-        private async Task UpdateMessage(IDialogContext context, string taskItemGuid)
-        {
-            Tuple<string, ThumbnailCard> cachedMessage;
-
-            //Retrieve passed task guid from the ConversationData cache
-            if (context.ConversationData.TryGetValue("task " + taskItemGuid, out cachedMessage))
-            {
-                IMessageActivity reply = context.MakeMessage();
-                reply.Attachments = new List<Attachment>();
-
-                string activityId = cachedMessage.Item1;
-                ThumbnailCard card = cachedMessage.Item2;
-
-                card.Subtitle = $"Assigned to: {context.Activity.From.Name}";
-
-                card.Buttons = new List<CardAction>()
-                {
-                    new CardAction("openUrl", "View task", null, "https://www.microsoft.com"),
-                    new CardAction("openUrl", "Update details", null, "https://www.microsoft.com")
-                };
-
-                reply.Attachments.Add(card.ToAttachment());
-                await context.PostAsync(reply);
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"Could not update task {taskItemGuid}");
-            }
         }
 
         #endregion

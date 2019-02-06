@@ -28,41 +28,7 @@ namespace TeamsTalentMgmtApp
             }
             else if (activity.Type == ActivityTypes.Invoke) 
             {
-                //Compose extensions come in as Invokes. Leverage the Teams SDK helper functions
-                if (activity.IsComposeExtensionQuery())
-                {
-                    // Determine the response object to reply with
-                    MessagingExtension msgExt = new MessagingExtension(activity);
-                    var invokeResponse = msgExt.CreateResponse();
-
-                    // Return the response
-                    return Request.CreateResponse(HttpStatusCode.OK, invokeResponse);
-                }
-                else if (activity.Name == "fileConsent/invoke")
-                {
-                    // Try to replace with File uploaded card.
-                    return Request.CreateResponse(HttpStatusCode.OK);
-                }
-                else if (activity.IsTeamsVerificationInvoke())
-                {
-                    await Conversation.SendAsync(activity, () => new Dialogs.RootDialog());
-                }
-                else if (activity.Name == "task/fetch")
-                {
-                    JObject parameters = activity.Value as JObject;
-
-                    if (parameters != null)
-                    {
-                        string command = parameters["command"].ToString();
-
-                        // Fetch dynamic adaptive card for task module.
-                        if (command == "createPostingExtended")
-                        {
-                            JObject resp = new TaskModuleHelper().CreateJobPostingTaskModuleResponse();
-                            return Request.CreateResponse(HttpStatusCode.OK, resp);
-                        }
-                    }
-                }
+                // No invokes to handle yet
             }
             else
             {

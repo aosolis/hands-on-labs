@@ -90,20 +90,6 @@ namespace TeamsTalentMgmtApp
                         results.Attachments.Add(composeExtensionAttachment);
                     }
                 }
-                else if (query.CommandId == "searchCandidates")
-                {
-                    string name = query.Parameters[0].Value.ToString();
-                    CandidatesDataController controller = new CandidatesDataController();
-
-                    foreach (Candidate c in controller.GetTopCandidates("ABCD1234"))
-                    {
-                        c.Name = c.Name.Split(' ')[0] + " " + CultureInfo.CurrentCulture.TextInfo.ToTitleCase(name);
-                        var card = CardHelper.CreateSummaryCardForCandidate(c);
-
-                        var composeExtensionAttachment = card.ToAttachment().ToComposeExtensionAttachment(CardHelper.CreatePreviewCardForCandidate(c).ToAttachment());
-                        results.Attachments.Add(composeExtensionAttachment);
-                    }
-                }
 
                 response = new ComposeExtensionResponse()
                 {
