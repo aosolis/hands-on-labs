@@ -101,17 +101,6 @@
     {
       "type": "Action.Submit",
       "title": "Cancel"
-    },
-    {
-      "type": "Action.Submit",
-      "title": "Open form",
-      "data": {
-        "command": "createPostingExtended",
-        "commandId": "createPostingExtended",
-        "msteams": {
-          "type": "task/fetch"
-        }
-      }
     }
   ]
 }
