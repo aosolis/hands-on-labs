@@ -90,6 +90,10 @@ namespace TeamsTalentMgmtApp.Dialogs
                             await SendCandidateDetailsMessage(context, c);
                         }
                     }
+                    else if (cmd.Contains("new"))
+                    {
+                        await SendCreateNewJobPostingMessage(context);
+                    }
                     else
                     {
                         await SendHelpMessage(context, "I'm sorry, I did not understand you :(");
@@ -214,6 +218,23 @@ namespace TeamsTalentMgmtApp.Dialogs
                 new CardAction("messageBack", "Add new job posting", null, null, $"new job posting", "New job posting")
             };
             reply.Attachments.Add(buttonsCard.ToAttachment());
+            await context.PostAsync(reply);
+        }
+
+        private async Task SendCreateNewJobPostingMessage(IDialogContext context)
+        {
+            IMessageActivity reply = context.MakeMessage();
+            reply.Attachments = new List<Attachment>();
+
+            AdaptiveCard card = CardHelper.CreateCardForNewJobPosting();
+            Attachment attachment = new Attachment()
+            {
+                ContentType = AdaptiveCard.ContentType,
+                Content = card
+            };
+
+            reply.Attachments.Add(attachment);
+
             await context.PostAsync(reply);
         }
 
