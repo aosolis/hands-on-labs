@@ -154,21 +154,8 @@ namespace TeamsTalentMgmtApp.Dialogs
             {
                 var command = parameters["command"];
 
-                // Handle login completion event.
-                if (activity.IsTeamsVerificationInvoke())
-                {
-                    string code = parameters["state"].ToString();
-
-                    var oauthClient = activity.GetOAuthClient();
-                    var token = await oauthClient.OAuthApi.GetUserTokenAsync(activity.From.Id, ConnectionName, magicCode: code).ConfigureAwait(false);
-                    if (token != null)
-                    {
-                        Microsoft.Graph.User current = await new GraphUtil(token.Token).GetMe();
-                        await context.PostAsync($"Success! You are now signed in as {current.DisplayName} with {current.Mail}");
-                    }
-                }
                 // Confirmation of job posting message.
-                else if (command != null && command.ToString() == "createPosting")
+                if (command != null && command.ToString() == "createPosting")
                 {
                     OpenPosition pos = new OpenPositionsDataController().CreatePosition(parameters["jobTitle"].ToString(), int.Parse(parameters["jobLevel"].ToString()),
                         Constants.Locations[int.Parse(parameters["jobLocation"].ToString())], activity.From.Name);
@@ -269,7 +256,7 @@ namespace TeamsTalentMgmtApp.Dialogs
         {
             IMessageActivity reply = context.MakeMessage();
             reply.Attachments = new List<Attachment>();
-            reply.Text = $"Your position has been created.";
+            reply.Text = $"Your position has been created. Please also upload the job description now.";
 
             ThumbnailCard positionCard = CardHelper.CreateCardForPosition(pos, false);
             reply.Attachments.Add(positionCard.ToAttachment());
