@@ -121,7 +121,13 @@ Visual Studio will build the solution and open http://localhost:3979. But we're 
 
 ![A screenshot of the app running in the browser](Images/s7_2.png)
 
-## Step 7: Install and test the Sample App
+## Step 7: Set the messaging endpoint and test the Sample App
+Go back to your app in App Studio. In the "Bots" section, in the "Messaging endpoint" field, enter your ngrok URL, followed by `/api/messages`. For example, if your ngrok URL is `https://b26d0449.ngrok.io`, you would enter `https://b26d0449.ngrok.io/api/messages` as the messaging endpoint.
+
+Press Tab to move focus out of the text box, and wait for the green checkmark to indicate that the messaging endpoint was successfully saved.
+
+![A screenshot of the bots settings](Images/s8_1.png)
+
 You can load and test your sample app directly from App Studio. To do this, click “Test and distribute” under the Finish section in the Manifest editor. Click “Install” and select the team in which you want to test the app.
  
 ![A screenshot of installing the app from App studio](Images/s3_1.png)
