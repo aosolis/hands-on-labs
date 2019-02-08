@@ -146,6 +146,8 @@ First let's define the messaging extension in the manifest.
 Go to the "Messaging extension" section in the manifest editor, then click on "Set up" to start.
 In the dialog that appears, select "Existing" and name it "Contoso Talent". Under "Bot ID" select "Select from one of my existing bots", and pick "Contoso Talent" from the dropdown. Leave the "Can update configuration?" check box unchecked. Press the "Save" button to save your changes.
 
+![A screenshot of adding a new command](Images/s4_3.png)
+
 Back on the "Messaging extension" page, under "Commands" click "Add" to add a new command. Provide the following field values:
 - Command Id = searchPositions
 - Title = Positions
@@ -155,7 +157,7 @@ Back on the "Messaging extension" page, under "Commands" click "Add" to add a ne
 - Title = Keywords
 - Description = Position keywords
 
-![A screenshot of adding a new command](Images/s9_1.png)
+![A screenshot of adding a new command](Images/s4_4.png)
 
 ### Test it!
 1. Under "Test and distribute" click "Install" to reload the app.
