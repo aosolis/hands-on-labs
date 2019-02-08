@@ -125,6 +125,7 @@ Visual Studio will build the solution and open http://localhost:3979. But we're 
 You can load and test your sample app directly from App Studio. To do this, click “Test and distribute” under the Finish section in the Manifest editor. Click “Install” and select the team in which you want to test the app.
  
 ![A screenshot of installing the app from App studio](Images/s3_1.png)
+
 ![A screenshot of the App install diaglog](Images/s3_2.png)
  
 Next, you'll see the dialog below (of course, the team name will be different). Here, it shows the General Channel:
@@ -137,11 +138,83 @@ Next, you'll see the dialog below (of course, the team name will be different). 
 
 # PART 2: Add a messaging extension to your app
 
-## Step 8: Make some code changes
-In this step, you’ll add a new command to the messaging extension to allow searching for candidates in addition to open positions.
+In this part, we'll add a messaging extension to the app that will search for open positions and candidates.
 
+## Step 8: Add a messaging extension to the manifest
+First let's define the messaging extension in the manifest.
+
+Go to the "Messaging extension" section in the manifest editor, then click on "Set up" to start.
+In the dialog that appears, select "Existing" and name it "Contoso Talent". Under "Bot ID" select "Select from one of my existing bots", and pick "Contoso Talent" from the dropdown. Leave the "Can update configuration?" check box unchecked. Press the "Save" button to save your changes.
+
+![A screenshot of adding a new command](Images/s9_0.png)
+
+Back on the "Messaging extension" page, under "Commands" click "Add" to add a new command. Provide the following field values:
+- Command Id = searchPositions
+- Title = Positions
+- Description = Search open positions by keyword
+- Parameter
+- Name = keyword
+- Title = Keywords
+- Description = Position keywords
+
+![A screenshot of adding a new command](Images/s9_1.png)
+
+### Test it!
+1. Under "Test and distribute" click "Install" to reload the app.
+2. Go to a 1:1 chat. Under the compose box click on "..." to bring up the messaging extension list. Choose "Contoso Talent".
+3. A messaging extension window with a search box will appear. You can try searching, but since we haven't implemneted the messaging extension yet, you'll get an error message.
+4. You can go to the ngrok inspector at `http://localhost:4040/` to see the messages that your bot receives when the user searches in the messaging extension.
+
+## Step 9: Add code to handle messaging extension invokes
+Messaging extension searches are sent to your bot as an invoke activity. It's then expected to respond to this message synchronously with a list of results, or an action.
+
+```json
+{
+  "type": "invoke",
+  "name": "composeExtension/query",
+  "value": {
+    "commandId": "searchPositions",
+    "parameters": [
+      {
+        "name": "keyword",
+        "value": "Toronto"
+      }
+    ],
+    "queryOptions": {
+      "skip": 0,
+      "count": 25
+    }
+  },
+  ...
+}
+```
+
+We've added the code to return results in **MessagingExtension.cs**, but you still need to hook it up to **MessagesController.cs** by handling the incoming invoke requests. We'll use the Teams SDK method `IsComposeExtensionQuery()`, which checks if an incoming invoke activity is a messaging extension query.
+
+In the `Post()` method of `MessagesController`, add the following block of code to the section that handles invoke activities:
+```csharp
+  // Compose extensions come in as Invokes. Leverage the Teams SDK helper functions
+  if (activity.IsComposeExtensionQuery())
+  {
+      // Determine the response object to reply with
+      MessagingExtension msgExt = new MessagingExtension(activity);
+      var invokeResponse = msgExt.CreateResponse();
+
+      // Return the response
+      return Request.CreateResponse(HttpStatusCode.OK, invokeResponse);
+  }
+```
+
+### Test it!
+1. Build and run the solution in Visual Studio.
+2. Go to a 1:1 chat. Under the compose box click on "..." to bring up the messaging extension list. Choose "Contoso Talent".
+3. Search for open positions.
+
+## Step 10: Add another messaging extension command
+
+### Code
 In Visual Studio’s solution explorer, under the **Messaging** folder, open **MessagingExtension.cs**
-Under the CreateResponse() method, add the following block of code at line 93:
+Under the CreateResponse() method, add a handler for another command:
 ```csharp
 else if (query.CommandId == "searchCandidates")
 {
@@ -160,8 +233,8 @@ else if (query.CommandId == "searchCandidates")
 ```
 This block of code is what responds to the new command to search for candidates. Rebuild your solution and rerun by hitting F5. In the next step you’ll wire up the command to your app’s manifest.
 
-## Step 9: Add a new command to the manifest
-Now you’ll add a new command under the Messaging extensions section of your app in App Studio. Provide the following field values:
+### Manifest
+Add another command to the Messaging extension, similar to what you did in Step 8. Provide the following field values:
 - Command Id = searchCandidates
 - Title = Candidates
 - Description = \<whatever string you want\>
@@ -172,13 +245,10 @@ Now you’ll add a new command under the Messaging extensions section of your ap
 
 ![A screenshot of adding a new command](Images/s9_1.png)
  
-## Step 10: Test your messaging extension
-In Visual Studio, hit F5 to restart your local service.
-
-Under Test and distribute, click Install to reload your app.
-
-In Teams, go to any chat or channel conversation. Click on the “…” below the compose box to open the Contoso Talent app – you should now see your new command. Type in any string to initiate the search with your new code changes.
-![A screenshot of the running app imn Microsoft Teams](Images/s9_2.png)
+### Test it!
+1. Build and run the solution in Visual Studio.
+2. Go to a 1:1 chat. Under the compose box click on "..." to bring up the messaging extension list. Choose "Contoso Talent".
+3. In the messaging extension window, click on the "Candidates" tab and try searching for candidates.
 
 # PART 3: Handle creating a new job posting
 In this part, we'll add a way to create new job postings using the bot, using an [adaptive card](https://adaptivecards.io) to collect user input.
