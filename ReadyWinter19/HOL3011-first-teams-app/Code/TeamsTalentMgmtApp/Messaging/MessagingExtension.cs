@@ -42,7 +42,7 @@ namespace TeamsTalentMgmtApp
         /// Note that for this sample, we are returning generated positions for illustration purposes only.
         /// </summary>
         /// <returns></returns>
-        public ComposeExtensionResponse CreateResponse()
+        public ComposeExtensionResponse CreateQueryResponse()
         {
             ComposeExtensionResponse response = null;
 
@@ -112,6 +112,68 @@ namespace TeamsTalentMgmtApp
             }
 
             return response;
+        }
+
+        /// <summary>
+        /// Return response to composeExtension/fetchTask invoke
+        /// </summary>
+        public JObject CreateFetchTaskResponse()
+        {
+            JObject parameters = activity.Value as JObject;
+            if (parameters != null)
+            {
+                string command = parameters["commandId"].ToString();
+
+                // Fetch dynamic adaptive card for task module.
+                if (command == "newPosition")
+                {
+                    return new TaskModuleHelper().CreateJobPostingTaskModuleResponse();
+                }
+            }
+
+            // Unknown command or incorrect structure
+            return null;
+        }
+
+        /// <summary>
+        /// Return response for composeExtension/submitAction invoke.
+        /// </summary>
+        public object CreateSubmitActionResponse()
+        {
+            JObject parameters = activity.Value as JObject;
+            if (parameters != null)
+            {
+                string command = parameters["commandId"].ToString();
+                JObject data = (JObject)parameters["data"];
+
+                if (command == "newPosition")
+                {
+                    // Create the position and return the result as a card
+                    // You can also return a Task module "continue" result if an additional turn is needed
+
+                    OpenPosition pos = new OpenPositionsDataController().CreatePosition(
+                        data["jobTitle"].ToString(),
+                        int.Parse(data["jobLevel"].ToString()),
+                        data["jobLocation"].ToString(),
+                        activity.From.Name);
+                    var positionCard = CardHelper.CreateCardForPosition(pos, false);
+                    return new ComposeExtensionResponse
+                    {
+                        ComposeExtension = new ComposeExtensionResult
+                        {
+                            AttachmentLayout = AttachmentLayoutTypes.List,
+                            Type = "result",
+                            Attachments = new List<ComposeExtensionAttachment>
+                            {
+                                positionCard.ToAttachment().ToComposeExtensionAttachment(),
+                            }
+                        }
+                    };
+                }
+            }
+
+            // Unknown command or incorrect structure
+            return null;
         }
     }
 }

@@ -33,10 +33,23 @@ namespace TeamsTalentMgmtApp
                 {
                     // Determine the response object to reply with
                     MessagingExtension msgExt = new MessagingExtension(activity);
-                    var invokeResponse = msgExt.CreateResponse();
+                    switch (activity.Name)
+                    {
+                        case "composeExtension/query":
+                            var queryResponse = msgExt.CreateQueryResponse();
+                            return Request.CreateResponse(HttpStatusCode.OK, queryResponse);
 
-                    // Return the response
-                    return Request.CreateResponse(HttpStatusCode.OK, invokeResponse);
+                        case "composeExtension/fetchTask":
+                            var fetchTaskResponse = msgExt.CreateFetchTaskResponse();
+                            return Request.CreateResponse(HttpStatusCode.OK, fetchTaskResponse);
+
+                        case "composeExtension/submitAction":
+                            var submitResponse = msgExt.CreateSubmitActionResponse();
+                            return Request.CreateResponse(HttpStatusCode.OK, submitResponse);
+
+                        default:
+                            return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Unknown invoke name: " + activity.Name);
+                    }
                 }
                 else if (activity.Name == "fileConsent/invoke")
                 {
