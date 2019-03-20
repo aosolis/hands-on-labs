@@ -50,10 +50,9 @@ namespace TeamsTalentMgmtApp
                 else if (activity.Name == "task/fetch")
                 {
                     JObject parameters = activity.Value as JObject;
-
                     if (parameters != null)
                     {
-                        string command = parameters["command"].ToString();
+                        string command = parameters["data"]["command"].ToString();
 
                         // Fetch dynamic adaptive card for task module.
                         if (command == "createPostingExtended")
