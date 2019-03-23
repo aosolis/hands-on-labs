@@ -121,7 +121,13 @@ Visual Studio will build the solution and open http://localhost:3979. But we're 
 
 ![A screenshot of the app running in the browser](Images/s7_2.png)
 
-## Step 7: Install and test the Sample App
+## Step 7: Set the messaging endpoint and test the Sample App
+Go back to your app in App Studio. In the "Bots" section, in the "Messaging endpoint" field, enter your ngrok URL, followed by `/api/messages`. For example, if your ngrok URL is `https://b26d0449.ngrok.io`, you would enter `https://b26d0449.ngrok.io/api/messages` as the messaging endpoint.
+
+Press Tab to move focus out of the text box, and wait for the green checkmark to indicate that the messaging endpoint was successfully saved.
+
+![A screenshot of the bots settings](Images/s8_1.png)
+
 You can load and test your sample app directly from App Studio. To do this, click “Test and distribute” under the Finish section in the Manifest editor. Click “Install” and select the team in which you want to test the app.
  
 ![A screenshot of installing the app from App studio](Images/s3_1.png)
@@ -256,7 +262,7 @@ In this part, we'll add a way to create new job postings using the bot, using an
 ## Step 11: Handle the "new" command
 Messages sent to the bot are handled by the `MessageReceivedAsync` method in `RootDialog.cs`. To keep the example relatively simple, the method simply looks for keywords in the text and acts accordingly. A more sophisticated app might use [LUIS](https://luis.ai) to detect intents and entities.
 
-At line 143 add a handler for the "new" keyword:
+In `MessageReceivedAsync`, add a handler for the "new" keyword:
 ```csharp
   else if (cmd.Contains("new"))
   {
@@ -314,20 +320,24 @@ so the bot wil receive a message like:
 }
 ```
 
-In the `HandleSubmitAction` of `RootDialog.cs`, at line XXX, add the following block of code:
+In the `HandleSubmitAction` of `RootDialog.cs`, replace the method body with following block of code:
 ```csharp
-  // Confirmation of job posting message.
-  else if (command != null && command.ToString() == "createPosting")
+  JObject parameters = activity.Value as JObject;
+  if (parameters != null)
   {
-      var pos = new OpenPositionsDataController().CreatePosition(
-        parameters["jobTitle"].ToString(),
-        int.Parse(parameters["jobLevel"].ToString()),
-        Constants.Locations[int.Parse(parameters["jobLocation"].ToString())], activity.From.Name);
+      var command = parameters["command"];
 
-      await SendNewPostingConfirmationMessage(context, pos);
+      // Confirmation of job posting message.
+      if (command != null && command.ToString() == "createPosting")
+      {
+          OpenPosition pos = new OpenPositionsDataController().CreatePosition(parameters["jobTitle"].ToString(), int.Parse(parameters["jobLevel"].ToString()),
+              Constants.Locations[int.Parse(parameters["jobLocation"].ToString())], activity.From.Name);
+
+          await SendNewPostingConfirmationMessage(context, pos);
+      }
   }
 ```
-Add the `SendNewPostingConfirmationMessage` method to `RootDialog.cs`:
+Then add the `SendNewPostingConfirmationMessage` method to `RootDialog.cs`:
 ```csharp
   private async Task SendNewPostingConfirmationMessage(IDialogContext context, OpenPosition pos)
   {
