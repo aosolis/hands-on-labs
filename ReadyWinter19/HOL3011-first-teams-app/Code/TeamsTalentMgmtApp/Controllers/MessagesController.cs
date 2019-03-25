@@ -38,11 +38,16 @@ namespace TeamsTalentMgmtApp
                     // Return the response
                     return Request.CreateResponse(HttpStatusCode.OK, invokeResponse);
                 }
+                else if (activity.IsTeamsVerificationInvoke())
+                {
+                    await Conversation.SendAsync(activity, () => new Dialogs.RootDialog());
+                }
             }
             else
             {
                 await HandleSystemMessage(activity);
             }
+            
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
@@ -90,10 +95,6 @@ namespace TeamsTalentMgmtApp
             else if (message.Type == ActivityTypes.Typing)
             {
                 // Handle knowing that the user is typing
-            }
-            else if (message.Type == ActivityTypes.Ping)
-            {
-
             }
         }
     }

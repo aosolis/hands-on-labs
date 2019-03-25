@@ -21,11 +21,6 @@ namespace TeamsTalentMgmtApp.Dialogs
     [Serializable]
     public class RootDialog : IDialog<object>
     {
-        /// <summary>
-        /// Managing connection
-        /// </summary>
-        private static string ConnectionName = ConfigurationManager.AppSettings["ConnectionName"];
-
         public Task StartAsync(IDialogContext context)
         {
             context.Wait(MessageReceivedAsync);
@@ -49,7 +44,21 @@ namespace TeamsTalentMgmtApp.Dialogs
 
             if (text == null)
             {
-                await HandleSubmitAction(context, activity);
+                if (activity.IsTeamsVerificationInvoke())
+                {
+                    var magicCode = ((JObject)activity.Value)["state"].ToString();
+                    var oauthClient = activity.GetOAuthClient();
+                    var token = await oauthClient.OAuthApi.GetUserTokenAsync(activity.From.Id, "Microsoft Graph", magicCode).ConfigureAwait(false);
+                    if (token != null)
+                    {
+                        Microsoft.Graph.User current = await new GraphUtil(token.Token).GetMe();
+                        await context.PostAsync($"Success! You are now signed in as {current.DisplayName} with {current.Mail}.");
+                    }
+                }
+                else
+                {
+                    await HandleSubmitAction(context, activity);
+                }
             }
             else
             {
@@ -110,6 +119,10 @@ namespace TeamsTalentMgmtApp.Dialogs
                     {
                         await SendHelpMessage(context, "## Welcome to the Contoso Talent Management app");
                     }
+                    else if (text.Contains("login"))
+                    {
+                        await SendOAuthCardAsync(context, activity);
+                    }
                     else
                     // Don't know what to say so this is the generic handling here.
                     {
@@ -123,6 +136,19 @@ namespace TeamsTalentMgmtApp.Dialogs
 
         #region MessagingHelpers
 
+        /// <summary>
+        /// Send login prompt.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="activity"></param>
+        /// <returns></returns>
+        private async Task SendOAuthCardAsync(IDialogContext context, Activity activity)
+        {
+            var client = activity.GetOAuthClient();
+            var oauthReply = await activity.CreateOAuthReplyAsync("Microsoft Graph", "Please sign in to access talent services", "Sign in").ConfigureAwait(false);
+            await context.PostAsync(oauthReply);
+        }
+        
         /// <summary>
         /// Helper method to send a simple help message.
         /// </summary>
