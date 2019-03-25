@@ -407,3 +407,146 @@ Add code to `HandleSubmitAction` to respond to file attachments:"
 6. The bot should respond with `"Job posting successfully uploaded: ` and the name of the file that you uploaded.
 
 If that works, repeat steps 2-5, but this time send it a different kind of file--perhaps try an Excel spreadsheet? The bot should detect the incorrect file type, and say `"Invalid file type received. Please upload a PDF or Word document"`.
+
+# PART 4: Connecting to Microsoft Graph
+
+In this part, we'll connect the bot to Microsoft Graph to get some basic information about the user. The content in this section follows the method described in the Azure Bot Service documentation under [Add authentication to your bot via Azure Bot Service](https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-tutorial-authentication?view=azure-bot-service-3.0). (Note that like the rest of this tutorial, the content here uses v3 of the Bot Framework SDK. If you're using v4, you can find the equivalent topic [here](https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-authentication?view=azure-bot-service-4.0&tabs=csharp).)
+
+**You will need an Azure subscription to continue.** If you don't have one yet, you can sign up for a free Azure account [here](https://azure.microsoft.com/en-us/free/).
+
+## Step 14: Migrate your bot to Azure Bot Service
+First things first. The authentication flow described here is part of Azure Bot Service, so we must convert our bot to be registered in Azure.
+
+Go to the bot management page at `https://dev.botframework.com/bots?id=<<BOT_ID>`, replacing <<BOT_ID>> with your bot's GUID. For example, if your bot id is `83eb0a8e-cc12-45d4-8934-1d1b9ec84597`, navigate to `https://dev.botframework.com/bots?id=83eb0a8e-cc12-45d4-8934-1d1b9ec84597`.
+
+![A screenshot of bot management page](Images/s14_0.png)
+
+On that page, click on the "MIGRATE THIS BOT" link. Enter your subscription information in the dialog that appears. You will need:
+1. The Azure Active Directory associated with your Azure subscription
+2. The specific Azure subscription
+3. The region for your bot
+The resource group and pricing tier are set to defaults. You can change these in the Azure Portal after the migration has completed.
+
+![A screenshot of bot migration page](Images/s14_1.png)
+
+Click "Migrate". Agree to the terms and conditions displayed to begin the migration. When it's finished, click on "Open the new bot". This will take you to the bot in the Azure portal.
+
+![A screenshot of bot channels registration blade in the Azure portal](Images/s14_2.png)
+
+## Step 15: Configure the OAuth connection
+From the Azure portal, click on "Settings" under "Bot management" to bring up the bot settings. You can manage all your bot's settings from this page, including ones that you can't change from App Studio.
+* Display name (available in App Studio)
+* Messaging endpoint(available in App Studio)
+* Icon
+* Description
+* Bot analytics using Application Insights (for more infromation, see [here](https://docs.microsoft.com/en-us/azure/bot-service/bot-service-resources-app-insights-keys?view=azure-bot-service-4.0))
+
+![A screenshot of bot settings blade in the Azure portal](Images/s15_0.png)
+
+To add an OAuth connection, click on the "Add setting" button at the bottom of the page.
+
+Enter the following settings:
+- Name = Microsoft Graph
+- Service provider = Azure Active Directory v2
+- Client id = \<your bot's Microsoft app id\>
+- Client secret = \<your bot's Microsoft app password\>
+- Tenant id = `common`
+- Scopes = `https://graph.microsoft.com/User.ReadBasic`
+then click "Save".
+
+Leave this page open: we'll come back to it later.
+
+## Step 16: Add a reply URL to your application
+You must add Azure Bot service as a reply URL for your application so that it can receive the authorization code from Azure AD and manage the user's token.
+
+Go to the Azure AD application management portal at `https://apps.dev.microsoft.com/#/application/<<BOT_ID>>`, where again you replace `<<BOT_ID>>` with your bot's application ID.
+
+On the app page, click on the "Add platform" button, then select "Web" on the popup that appears. Add `https://token.botframework.com/.auth/web/redirect` to the list of reply URLs then click "Save".
+
+![A screenshot of the app registration page](Images/s16_0.png)
+
+Wait approximately 3-5 minutes for your application settings to propagate. This is a good time to grab a cup of coffee!
+
+### Test the bot OAuth connection
+Go back to the bot settings page in the Azure portal, and click on the "Microsoft Graph" OAuth connection that you created in Step 15. Click on the "Test connection" button to test the connection. This will simulate a login flow.
+
+![A screenshot of the Test connection button](Images/s16_1.png)
+
+When prompted, log in to your account and give your bot the requested permissions. If this succeeds, you will be taken to a success page where you can see the token that Azure Bot Service was able to obtain on behalf of your bot.
+
+![A screenshot of the success page](Images/s16_2.png)
+
+## Step 17: Handle the login command
+In the `MessageReceivedAsync` method of `RootDialog.cs`, after the block that handles the "help" command, add a handler for "login":
+
+```csharp
+  else if (text.Contains("login"))
+  {
+      await SendOAuthCardAsync(context, activity);
+  }
+```
+
+and the corresponding `SendOAuthCardAsync` method:
+
+```csharp
+  private async Task SendOAuthCardAsync(IDialogContext context, Activity activity)
+  {
+      var client = activity.GetOAuthClient();
+      var oauthReply = await activity.CreateOAuthReplyAsync(
+        "Microsoft Graph",
+        "Please sign in to access talent services",
+        "Sign in");
+      await context.PostAsync(oauthReply);
+  }
+```
+
+This will send a card with a button that prompts the user to login, in response to the "login" command. This starts the bot authentication flow described [here](https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/authentication/auth-flow-bot).
+
+Note that there is an additional verification step that your bot must handle: steps 11 and 12 in the flow diagram at the documentation link above. To handle this step, add the following code to the `Post` method `MessagesController.cs`, after the block that handles messaging extension queries.
+
+```csharp
+  else if (activity.IsTeamsVerificationInvoke())
+  {
+      await Conversation.SendAsync(activity, () => new Dialogs.RootDialog());
+  }
+```
+
+This forwards the activity to be handled by `RootDialog`. Now add the handler to `RootDialog.cs` in the `MessageReceivedAsync` method, by changing the block that handles `text == null` to the following:
+
+```csharp
+  if (text == null)
+  {
+      if (activity.IsTeamsVerificationInvoke())
+      {
+          var magicCode = ((JObject)activity.Value)["state"].ToString();
+          var oauthClient = activity.GetOAuthClient();
+          var token = await oauthClient.OAuthApi.GetUserTokenAsync(
+            activity.From.Id, 
+            "Microsoft Graph", 
+            magicCode);
+          if (token != null)
+          {
+              Microsoft.Graph.User current = await new GraphUtil(token.Token).GetMe();
+              await context.PostAsync($"Success! You are now signed in as {current.DisplayName} with {current.Mail}.");
+          }
+      }
+      else
+      {
+          await HandleSubmitAction(context, activity);
+      }
+  }
+```
+
+Finally, we need to declare `token.botframework.com` as a valid domain for our application, so that we can launch a signin popup to that domain. (Otherwise, the popup will be blocked by Teams.)
+
+Go to your application in App Studio, click on "Valid domains" under the "Finish" heading, and add `token.botframework.com`.
+
+Click on "Test and distribute", then install your app again to update the app's definition.
+
+### Test it!
+1. Build and run your project.
+2. Send "login" to your bot.
+4. The bot should reply a signin card. Click on "Sign in".
+5. Complete the signin flow in the popup.
+6. The bot should respond with `"Success! You are now signed in as ` followed by your name and email address.
+
