@@ -378,7 +378,7 @@ When the user send the bot a message with a file attached, the bot receives a `a
 }
 ```
 
-Add code to `HandleSubmitAction` to respond to file attachments:"
+Add code to `HandleSubmitAction` to respond to file attachments:
 ```csharp
   else if (activity.Attachments.Any())
   {
@@ -398,6 +398,13 @@ Add code to `HandleSubmitAction` to respond to file attachments:"
       }
   }
 ```
+
+Finally, update your app's manifest to declare that your bot supports files. Inside App Studio:
+1. Click on your app to edit it.
+2. Under "Capabilities", click on "Bots".
+3. Click on the "Edit" button next to your bot's name.
+4. In the dialog that appears, check the box next to "My bot supports uploading and downloading files". Click on "Save".
+5. Go to the "Test and distribute" section, then click on "Install" to sideload your app again.
 
 ### Test it!
 1. Build and run your project.
